@@ -1,9 +1,10 @@
 // ─── Client Options ───────────────────────────────────────────────────────
 
 export interface BrowseFleetOptions {
-  apiKey: string;
+  apiKey?: string;
   baseUrl?: string;
   timeout?: number;
+  maxRetries?: number;
 }
 
 // ─── Session Types ────────────────────────────────────────────────────────

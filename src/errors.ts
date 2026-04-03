@@ -33,3 +33,17 @@ export class RateLimitError extends BrowseFleetError {
     this.retryAfter = retryAfter;
   }
 }
+
+export class ValidationError extends BrowseFleetError {
+  constructor(message = 'Validation error', body?: unknown) {
+    super(message, 400, body);
+    this.name = 'ValidationError';
+  }
+}
+
+export class ServerError extends BrowseFleetError {
+  constructor(message = 'Server error', status = 500, body?: unknown) {
+    super(message, status, body);
+    this.name = 'ServerError';
+  }
+}
