@@ -1,4 +1,4 @@
-import { BrowseFleetError, AuthError, NotFoundError, RateLimitError, ValidationError, ServerError } from './errors';
+import { BrowseFleetError, AuthError, NotFoundError, RateLimitError, ValidationError, ServerError } from './errors.js';
 import type {
   BrowseFleetOptions,
   CreateSessionRequest,
@@ -19,10 +19,19 @@ import type {
   FileUploadResponse,
   FileListResponse,
   UsageStats,
-} from './types';
+  AgentRequest,
+  AgentResult,
+  AgentStep,
+  CheckoutRequest,
+  CheckoutResponse,
+  PortalRequest,
+  PortalResponse,
+  BillingUsage,
+  LiveFrame,
+} from './types.js';
 
 export { BrowseFleetError, AuthError, NotFoundError, RateLimitError, ValidationError, ServerError };
-export * from './types';
+export * from './types.js';
 
 const DEFAULT_BASE_URL = 'https://api.browsefleet.com';
 const DEFAULT_TIMEOUT = 60_000;
@@ -84,6 +93,11 @@ class SessionsAPI {
   async downloadFile(sessionId: string, fileName: string): Promise<ArrayBuffer> {
     return this.client._requestRaw('GET', `/v1/sessions/${encodeURIComponent(sessionId)}/files/${encodeURIComponent(fileName)}`);
   }
+
+  /** Stream live screenshots from a session via SSE. */
+  async live(sessionId: string): Promise<ReadableStream<LiveFrame>> {
+    return this.client._requestSSE<LiveFrame>('GET', `/v1/sessions/${encodeURIComponent(sessionId)}/live`);
+  }
 }
 
 class ProfilesAPI {
@@ -110,6 +124,44 @@ class ProfilesAPI {
   }
 }
 
+class AgentAPI {
+  constructor(private readonly client: BrowseFleet) {}
+
+  /** Run an autonomous agent task. Creates a session, executes the task, and releases it. */
+  async run(request: AgentRequest): Promise<AgentResult> {
+    return this.client._request<AgentResult>('POST', '/v1/agent', request);
+  }
+
+  /** Run an agent task on an existing session. */
+  async runOnSession(sessionId: string, request: AgentRequest): Promise<AgentResult> {
+    return this.client._request<AgentResult>('POST', `/v1/sessions/${encodeURIComponent(sessionId)}/agent`, request);
+  }
+
+  /** Stream agent steps in real time via SSE. */
+  async stream(request: AgentRequest): Promise<ReadableStream<AgentStep>> {
+    return this.client._requestSSE<AgentStep>('POST', '/v1/agent/stream', request);
+  }
+}
+
+class BillingAPI {
+  constructor(private readonly client: BrowseFleet) {}
+
+  /** Create a Stripe checkout session. */
+  async createCheckout(request: CheckoutRequest): Promise<CheckoutResponse> {
+    return this.client._request<CheckoutResponse>('POST', '/v1/billing/checkout', request);
+  }
+
+  /** Create a Stripe customer portal session. */
+  async createPortal(request: PortalRequest): Promise<PortalResponse> {
+    return this.client._request<PortalResponse>('POST', '/v1/billing/portal', request);
+  }
+
+  /** Get current billing period usage. */
+  async getUsage(): Promise<BillingUsage> {
+    return this.client._request<BillingUsage>('GET', '/v1/billing/usage');
+  }
+}
+
 export class BrowseFleet {
   private readonly apiKey: string;
   private readonly baseUrl: string;
@@ -118,6 +170,8 @@ export class BrowseFleet {
 
   public readonly sessions: SessionsAPI;
   public readonly profiles: ProfilesAPI;
+  public readonly agent: AgentAPI;
+  public readonly billing: BillingAPI;
 
   constructor(options: BrowseFleetOptions = {}) {
     const key = options.apiKey || (typeof process !== 'undefined' ? process.env.BROWSEFLEET_API_KEY : undefined);
@@ -131,6 +185,8 @@ export class BrowseFleet {
 
     this.sessions = new SessionsAPI(this);
     this.profiles = new ProfilesAPI(this);
+    this.agent = new AgentAPI(this);
+    this.billing = new BillingAPI(this);
   }
 
   // ─── Quick Actions ────────────────────────────────────────────────────
@@ -358,6 +414,75 @@ export class BrowseFleet {
     }
 
     return (await response.json()) as T;
+  }
+
+  /** @internal Make an SSE request and return a ReadableStream that emits parsed JSON objects. */
+  async _requestSSE<T>(method: string, path: string, body?: unknown): Promise<ReadableStream<T>> {
+    const url = `${this.baseUrl}${path}`;
+    const headers: Record<string, string> = {
+      ...this._baseHeaders(),
+      'Accept': 'text/event-stream',
+    };
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      const message = (errorBody as { error?: string })?.error || response.statusText;
+      this._throwForStatus(response.status, message, errorBody, response);
+    }
+
+    if (!response.body) {
+      throw new BrowseFleetError('Response body is null — SSE streaming not supported', 0);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    return new ReadableStream<T>({
+      async pull(controller) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.close();
+            return;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          // Keep the last potentially incomplete line in the buffer
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              const data = trimmed.slice(6);
+              if (data === '[DONE]') {
+                controller.close();
+                return;
+              }
+              try {
+                const parsed = JSON.parse(data) as T;
+                controller.enqueue(parsed);
+              } catch {
+                // Skip malformed JSON lines
+              }
+            }
+          }
+        }
+      },
+      cancel() {
+        reader.cancel();
+      },
+    });
   }
 
   /** @internal Build a typed error without throwing. */

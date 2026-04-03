@@ -167,6 +167,79 @@ export interface FileListResponse {
   files: string[];
 }
 
+// ─── Agent Types ─────────────────────────────────────────────────────────
+
+export interface AgentRequest {
+  task: string;
+  url?: string;
+  provider?: 'anthropic' | 'openai';
+  model?: string;
+  maxIterations?: number;
+  apiKey?: string;
+}
+
+export interface AgentAction {
+  type: 'navigate' | 'click' | 'type' | 'press_key' | 'scroll' | 'wait' | 'done' | 'fail';
+  url?: string;
+  x?: number;
+  y?: number;
+  text?: string;
+  key?: string;
+  deltaX?: number;
+  deltaY?: number;
+  duration?: number;
+  result?: string;
+  reason?: string;
+}
+
+export interface AgentStep {
+  iteration: number;
+  reasoning: string;
+  actions: AgentAction[];
+  screenshot?: string;
+}
+
+export interface AgentResult {
+  success: boolean;
+  result?: string;
+  error?: string;
+  steps: AgentStep[];
+  totalIterations: number;
+}
+
+// ─── Billing Types ───────────────────────────────────────────────────────
+
+export interface CheckoutRequest {
+  priceId: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
+export interface CheckoutResponse {
+  url: string;
+}
+
+export interface PortalRequest {
+  returnUrl: string;
+}
+
+export interface PortalResponse {
+  url: string;
+}
+
+export interface BillingUsage {
+  currentPeriod: { start: string; end: string };
+  browserHours: number;
+  apiCalls: number;
+}
+
+// ─── Live Session Types ──────────────────────────────────────────────────
+
+export interface LiveFrame {
+  screenshot: string;
+  timestamp: number;
+}
+
 // ─── Usage Types ──────────────────────────────────────────────────────────
 
 export interface UsageStats {
