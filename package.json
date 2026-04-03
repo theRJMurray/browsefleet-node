@@ -1,0 +1,31 @@
+{
+  "name": "browsefleet",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the BrowseFleet cloud browser API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "browser",
+    "headless",
+    "automation",
+    "scraping",
+    "puppeteer",
+    "cloud-browser",
+    "ai-agent"
+  ],
+  "author": "RJ Murray",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
