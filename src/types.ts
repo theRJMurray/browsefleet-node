@@ -9,14 +9,19 @@ export interface BrowseFleetOptions {
 
 // ─── Session Types ────────────────────────────────────────────────────────
 
+export type SessionControlMode = 'agent' | 'human' | 'paused';
+
 export interface CreateSessionRequest {
   sessionId?: string;
   proxyUrl?: string;
   stealth?: 'none' | 'basic' | 'full';
+  headless?: boolean;
   userAgent?: string;
   viewport?: { width: number; height: number };
   timeout?: number;
   profileId?: string;
+  operatorMode?: boolean;
+  sensitiveMode?: boolean;
   blockAds?: boolean;
   cookies?: Array<{ name: string; value: string; domain: string; path?: string }>;
   timezone?: string;
@@ -29,6 +34,7 @@ export interface Session {
   status: 'active' | 'released' | 'expired' | 'error';
   websocketUrl: string;
   viewerUrl: string;
+  eventsUrl: string;
   createdAt: string;
   expiresAt: string;
   timeout: number;
@@ -36,6 +42,11 @@ export interface Session {
   stealth: string;
   viewport: { width: number; height: number };
   profileId?: string;
+  operatorMode: boolean;
+  controlMode: SessionControlMode;
+  sensitiveMode: boolean;
+  currentUrl?: string;
+  title?: string;
 }
 
 export interface SessionList {
@@ -45,6 +56,12 @@ export interface SessionList {
 
 export interface ReleaseRequest {
   ids?: string[];
+}
+
+export interface ControlSessionRequest {
+  controlMode?: SessionControlMode;
+  sensitiveMode?: boolean;
+  reason?: string;
 }
 
 // ─── Quick Action Types ───────────────────────────────────────────────────
@@ -103,7 +120,13 @@ export interface PdfRequest {
 
 export type BrowserAction =
   | { type: 'screenshot' }
-  | { type: 'click'; x: number; y: number; button?: 'left' | 'right' | 'middle'; clickCount?: number }
+  | {
+      type: 'click';
+      x: number;
+      y: number;
+      button?: 'left' | 'right' | 'middle';
+      clickCount?: number;
+    }
   | { type: 'type'; text: string }
   | { type: 'press_key'; key: string }
   | { type: 'scroll'; x?: number; y?: number; deltaX?: number; deltaY?: number }
@@ -205,32 +228,6 @@ export interface AgentResult {
   error?: string;
   steps: AgentStep[];
   totalIterations: number;
-}
-
-// ─── Billing Types ───────────────────────────────────────────────────────
-
-export interface CheckoutRequest {
-  priceId: string;
-  successUrl: string;
-  cancelUrl: string;
-}
-
-export interface CheckoutResponse {
-  url: string;
-}
-
-export interface PortalRequest {
-  returnUrl: string;
-}
-
-export interface PortalResponse {
-  url: string;
-}
-
-export interface BillingUsage {
-  currentPeriod: { start: string; end: string };
-  browserHours: number;
-  apiCalls: number;
 }
 
 // ─── Live Session Types ──────────────────────────────────────────────────

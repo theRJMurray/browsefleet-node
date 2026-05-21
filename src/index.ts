@@ -1,10 +1,19 @@
-import { BrowseFleetError, AuthError, NotFoundError, RateLimitError, ValidationError, ServerError } from './errors.js';
+import { SDK_VERSION } from './version.js';
+import {
+  BrowseFleetError,
+  AuthError,
+  NotFoundError,
+  RateLimitError,
+  ValidationError,
+  ServerError,
+} from './errors.js';
 import type {
   BrowseFleetOptions,
   CreateSessionRequest,
   Session,
   SessionList,
   ReleaseRequest,
+  ControlSessionRequest,
   ScrapeRequest,
   ScrapeResponse,
   ScreenshotRequest,
@@ -22,18 +31,13 @@ import type {
   AgentRequest,
   AgentResult,
   AgentStep,
-  CheckoutRequest,
-  CheckoutResponse,
-  PortalRequest,
-  PortalResponse,
-  BillingUsage,
   LiveFrame,
 } from './types.js';
 
 export { BrowseFleetError, AuthError, NotFoundError, RateLimitError, ValidationError, ServerError };
 export * from './types.js';
 
-const DEFAULT_BASE_URL = 'https://api.browsefleet.com';
+const DEFAULT_BASE_URL = 'http://localhost:3000';
 const DEFAULT_TIMEOUT = 60_000;
 
 class SessionsAPI {
@@ -56,7 +60,10 @@ class SessionsAPI {
 
   /** Release (close) a single session. */
   async release(sessionId: string): Promise<{ released: boolean }> {
-    return this.client._request<{ released: boolean }>('POST', `/v1/sessions/${encodeURIComponent(sessionId)}/release`);
+    return this.client._request<{ released: boolean }>(
+      'POST',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/release`,
+    );
   }
 
   /** Release multiple sessions or all sessions. */
@@ -65,23 +72,50 @@ class SessionsAPI {
     return this.client._request<{ released: number }>('POST', '/v1/sessions/release', body);
   }
 
+  /** Switch the session's control mode (agent / human / paused) and optionally toggle sensitive mode. */
+  async control(sessionId: string, options: ControlSessionRequest): Promise<Session> {
+    return this.client._request<Session>(
+      'POST',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/control`,
+      options,
+    );
+  }
+
   /** Execute Computer API actions on a session (click, type, scroll, navigate, screenshot). */
   async actions(sessionId: string, actions: BrowserAction[]): Promise<ActionResponse> {
-    return this.client._request<ActionResponse>('POST', `/v1/sessions/${encodeURIComponent(sessionId)}/actions`, { actions });
+    return this.client._request<ActionResponse>(
+      'POST',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/actions`,
+      { actions },
+    );
   }
 
   /** Solve a CAPTCHA on a session page. */
-  async solveCaptcha(sessionId: string, options: CaptchaSolveRequest = {}): Promise<CaptchaSolveResponse> {
-    return this.client._request<CaptchaSolveResponse>('POST', `/v1/sessions/${encodeURIComponent(sessionId)}/captcha/solve`, options);
+  async solveCaptcha(
+    sessionId: string,
+    options: CaptchaSolveRequest = {},
+  ): Promise<CaptchaSolveResponse> {
+    return this.client._request<CaptchaSolveResponse>(
+      'POST',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/captcha/solve`,
+      options,
+    );
   }
 
   /** List files available in a session. */
   async listFiles(sessionId: string): Promise<FileListResponse> {
-    return this.client._request<FileListResponse>('GET', `/v1/sessions/${encodeURIComponent(sessionId)}/files`);
+    return this.client._request<FileListResponse>(
+      'GET',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/files`,
+    );
   }
 
   /** Upload a file to a session. */
-  async uploadFile(sessionId: string, fileName: string, data: Buffer | Uint8Array): Promise<FileUploadResponse> {
+  async uploadFile(
+    sessionId: string,
+    fileName: string,
+    data: Buffer | Uint8Array,
+  ): Promise<FileUploadResponse> {
     return this.client._requestMultipart<FileUploadResponse>(
       `/v1/sessions/${encodeURIComponent(sessionId)}/files`,
       fileName,
@@ -91,12 +125,18 @@ class SessionsAPI {
 
   /** Download a file from a session. Returns the raw Response for binary handling. */
   async downloadFile(sessionId: string, fileName: string): Promise<ArrayBuffer> {
-    return this.client._requestRaw('GET', `/v1/sessions/${encodeURIComponent(sessionId)}/files/${encodeURIComponent(fileName)}`);
+    return this.client._requestRaw(
+      'GET',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/files/${encodeURIComponent(fileName)}`,
+    );
   }
 
   /** Stream live screenshots from a session via SSE. */
   async live(sessionId: string): Promise<ReadableStream<LiveFrame>> {
-    return this.client._requestSSE<LiveFrame>('GET', `/v1/sessions/${encodeURIComponent(sessionId)}/live`);
+    return this.client._requestSSE<LiveFrame>(
+      'GET',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/live`,
+    );
   }
 }
 
@@ -120,7 +160,10 @@ class ProfilesAPI {
 
   /** Delete a profile. */
   async delete(profileId: string): Promise<{ deleted: boolean }> {
-    return this.client._request<{ deleted: boolean }>('DELETE', `/v1/profiles/${encodeURIComponent(profileId)}`);
+    return this.client._request<{ deleted: boolean }>(
+      'DELETE',
+      `/v1/profiles/${encodeURIComponent(profileId)}`,
+    );
   }
 }
 
@@ -134,31 +177,16 @@ class AgentAPI {
 
   /** Run an agent task on an existing session. */
   async runOnSession(sessionId: string, request: AgentRequest): Promise<AgentResult> {
-    return this.client._request<AgentResult>('POST', `/v1/sessions/${encodeURIComponent(sessionId)}/agent`, request);
+    return this.client._request<AgentResult>(
+      'POST',
+      `/v1/sessions/${encodeURIComponent(sessionId)}/agent`,
+      request,
+    );
   }
 
   /** Stream agent steps in real time via SSE. */
   async stream(request: AgentRequest): Promise<ReadableStream<AgentStep>> {
     return this.client._requestSSE<AgentStep>('POST', '/v1/agent/stream', request);
-  }
-}
-
-class BillingAPI {
-  constructor(private readonly client: BrowseFleet) {}
-
-  /** Create a Stripe checkout session. */
-  async createCheckout(request: CheckoutRequest): Promise<CheckoutResponse> {
-    return this.client._request<CheckoutResponse>('POST', '/v1/billing/checkout', request);
-  }
-
-  /** Create a Stripe customer portal session. */
-  async createPortal(request: PortalRequest): Promise<PortalResponse> {
-    return this.client._request<PortalResponse>('POST', '/v1/billing/portal', request);
-  }
-
-  /** Get current billing period usage. */
-  async getUsage(): Promise<BillingUsage> {
-    return this.client._request<BillingUsage>('GET', '/v1/billing/usage');
   }
 }
 
@@ -171,22 +199,24 @@ export class BrowseFleet {
   public readonly sessions: SessionsAPI;
   public readonly profiles: ProfilesAPI;
   public readonly agent: AgentAPI;
-  public readonly billing: BillingAPI;
 
   constructor(options: BrowseFleetOptions = {}) {
-    const key = options.apiKey || (typeof process !== 'undefined' ? process.env.BROWSEFLEET_API_KEY : undefined);
-    if (!key) {
-      throw new AuthError('apiKey is required — pass it in options or set BROWSEFLEET_API_KEY');
-    }
+    const key =
+      options.apiKey ??
+      (typeof process !== 'undefined' ? process.env.BROWSEFLEET_API_KEY : undefined) ??
+      '';
     this.apiKey = key;
-    this.baseUrl = (options.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.baseUrl = (
+      options.baseUrl ??
+      (typeof process !== 'undefined' ? process.env.BROWSEFLEET_URL : undefined) ??
+      DEFAULT_BASE_URL
+    ).replace(/\/+$/, '');
     this.timeout = options.timeout || DEFAULT_TIMEOUT;
     this.maxRetries = options.maxRetries ?? 2;
 
     this.sessions = new SessionsAPI(this);
     this.profiles = new ProfilesAPI(this);
     this.agent = new AgentAPI(this);
-    this.billing = new BillingAPI(this);
   }
 
   // ─── Quick Actions ────────────────────────────────────────────────────
@@ -197,7 +227,10 @@ export class BrowseFleet {
   }
 
   /** Take a screenshot of a URL. Returns the image as an ArrayBuffer. */
-  async screenshot(url: string, options: Omit<ScreenshotRequest, 'url'> = {}): Promise<ArrayBuffer> {
+  async screenshot(
+    url: string,
+    options: Omit<ScreenshotRequest, 'url'> = {},
+  ): Promise<ArrayBuffer> {
     return this._requestRaw('POST', '/v1/screenshot', { url, ...options });
   }
 
@@ -248,10 +281,13 @@ export class BrowseFleet {
 
   /** @internal Common headers for all requests. */
   private _baseHeaders(): Record<string, string> {
-    return {
-      'Authorization': `Bearer ${this.apiKey}`,
-      'User-Agent': 'browsefleet-node/0.1.0',
+    const headers: Record<string, string> = {
+      'User-Agent': `browsefleet-node/${SDK_VERSION}`,
     };
+    if (this.apiKey) {
+      headers['x-api-key'] = this.apiKey;
+    }
+    return headers;
   }
 
   /** @internal Make a JSON API request with retry. */
@@ -262,7 +298,7 @@ export class BrowseFleet {
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       const headers: Record<string, string> = {
         ...this._baseHeaders(),
-        'Accept': 'application/json',
+        Accept: 'application/json',
       };
       if (body !== undefined) {
         headers['Content-Type'] = 'application/json';
@@ -370,17 +406,24 @@ export class BrowseFleet {
   }
 
   /** @internal Make a multipart/form-data upload request. */
-  async _requestMultipart<T>(path: string, fileName: string, data: Buffer | Uint8Array): Promise<T> {
+  async _requestMultipart<T>(
+    path: string,
+    fileName: string,
+    data: Buffer | Uint8Array,
+  ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const formData = new FormData();
     // Copy into a plain ArrayBuffer to satisfy Blob's type requirements (Buffer.buffer is ArrayBufferLike)
-    const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+    const arrayBuffer = data.buffer.slice(
+      data.byteOffset,
+      data.byteOffset + data.byteLength,
+    ) as ArrayBuffer;
     const blob = new Blob([new Uint8Array(arrayBuffer)]);
     formData.append('file', blob, fileName);
 
     const headers: Record<string, string> = {
       ...this._baseHeaders(),
-      'Accept': 'application/json',
+      Accept: 'application/json',
     };
 
     const controller = new AbortController();
@@ -421,7 +464,7 @@ export class BrowseFleet {
     const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = {
       ...this._baseHeaders(),
-      'Accept': 'text/event-stream',
+      Accept: 'text/event-stream',
     };
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
@@ -486,7 +529,12 @@ export class BrowseFleet {
   }
 
   /** @internal Build a typed error without throwing. */
-  private _buildError(status: number, message: string, body: unknown, response: Response): BrowseFleetError {
+  private _buildError(
+    status: number,
+    message: string,
+    body: unknown,
+    response: Response,
+  ): BrowseFleetError {
     switch (status) {
       case 400:
         return new ValidationError(message, body);
@@ -507,7 +555,12 @@ export class BrowseFleet {
     }
   }
 
-  private _throwForStatus(status: number, message: string, body: unknown, response: Response): never {
+  private _throwForStatus(
+    status: number,
+    message: string,
+    body: unknown,
+    response: Response,
+  ): never {
     throw this._buildError(status, message, body, response);
   }
 }

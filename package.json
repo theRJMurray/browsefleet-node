@@ -1,46 +1,85 @@
 {
   "name": "browsefleet",
   "version": "0.1.0",
-  "description": "TypeScript SDK for the BrowseFleet cloud browser API",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
+  "description": "Official Node.js SDK for BrowseFleet, the open-source cloud browser API for AI agents.",
+  "license": "MIT",
+  "author": "RJ Murray and contributors",
+  "homepage": "https://browsefleet.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theRJMurray/browsefleet-node.git"
+    "url": "git+https://github.com/theRJMurray/browsefleet-node.git"
   },
-  "homepage": "https://github.com/theRJMurray/browsefleet-node",
   "bugs": {
     "url": "https://github.com/theRJMurray/browsefleet-node/issues"
-  },
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "browser",
     "headless",
     "automation",
     "scraping",
+    "screenshot",
     "puppeteer",
     "cloud-browser",
-    "ai-agent"
+    "browser-api",
+    "ai-agent",
+    "stealth",
+    "browsefleet",
+    "sdk"
   ],
-  "author": "RJ Murray",
-  "license": "MIT",
+  "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.test.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "docs": "typedoc src/index.ts --out docs/api",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "@eslint/js": "^9.39.4",
+    "@types/node": "^22.19.19",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^9.39.4",
+    "prettier": "^3.8.3",
+    "rimraf": "^6.1.3",
+    "tsup": "^8.5.1",
+    "typedoc": "^0.27.9",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.59.4",
+    "vitest": "^2.1.9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
