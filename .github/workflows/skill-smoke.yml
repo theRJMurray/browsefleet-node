@@ -1,0 +1,47 @@
+name: skill.md smoke test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'skill.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'tsup.config.ts'
+      - '.github/workflows/skill-smoke.yml'
+
+concurrency:
+  group: skill-smoke-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  tldr:
+    name: skill.md TL;DR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Run TL;DR
+        run: |
+          set -ex
+          npm install
+          npm run build
+          npm test
+
+      - name: Verify ESM and CJS smoke commands from skill.md
+        run: |
+          set -ex
+          node --input-type=module -e "import('./dist/index.js').then(m => { if (typeof m.BrowseFleet !== 'function') process.exit(1); console.log('ESM ok'); })"
+          node -e "const {BrowseFleet} = require('./dist/index.cjs'); if (typeof BrowseFleet !== 'function') process.exit(1); console.log('CJS ok');"

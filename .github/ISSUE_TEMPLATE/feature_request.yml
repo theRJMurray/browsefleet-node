@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a new feature or behavior change.
+title: 'feat: '
+labels: ['enhancement', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The SDK is a thin wrapper over the BrowseFleet server. If your feature requires a server change, file in the server repo first. This SDK does not add functionality the server lacks.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: Code showing how a consumer would use the new feature.
+      render: typescript
+    validations:
+      required: true
+
+  - type: input
+    id: server-link
+    attributes:
+      label: Server endpoint or feature this depends on
+      description: Link to the server endpoint, PR, or issue. Required unless this is an SDK-internal change (e.g. error handling).
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/theRJMurray/browsefleet-node/blob/master/CODE_OF_CONDUCT.md).
+          required: true
