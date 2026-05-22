@@ -1,6 +1,6 @@
 {
   "name": "browsefleet",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Official Node.js SDK for BrowseFleet, the open-source cloud browser API for AI agents.",
   "license": "MIT",
   "author": "RJ Murray and contributors",

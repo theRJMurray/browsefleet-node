@@ -4,6 +4,15 @@ All notable changes to the BrowseFleet Node SDK are documented here. The format 
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the SDK adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2026-05-22)
+
+
+### Features
+
+* agent/billing/live endpoints, ESM output, full API coverage ([6062b6d](https://github.com/theRJMurray/browsefleet-node/commit/6062b6d44b3d3de29045816d43afc2e05b8c1936))
+* auto-retry, file upload, env fallback, typed errors, security hardening ([685fb6f](https://github.com/theRJMurray/browsefleet-node/commit/685fb6f79bab3cfbbbffe3b8f2b07aa9fbab40d5))
+* oss phase 4 foundation, dual ESM/CJS build, tests, CI ([#1](https://github.com/theRJMurray/browsefleet-node/issues/1)) ([ab43acd](https://github.com/theRJMurray/browsefleet-node/commit/ab43acdb7b60909a4998aff438a3354674fa5cc8))
+
 ## [Unreleased]
 
 ### Added
