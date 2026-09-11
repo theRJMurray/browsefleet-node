@@ -1,9 +1,12 @@
+---
+title: BrowseFleet Node.js SDK
+---
+
 # browsefleet
 
-[![npm](https://img.shields.io/npm/v/browsefleet.svg)](https://www.npmjs.com/package/browsefleet)
 [![CI](https://github.com/theRJMurray/browsefleet-node/actions/workflows/ci.yml/badge.svg)](https://github.com/theRJMurray/browsefleet-node/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Node](https://img.shields.io/node/v/browsefleet.svg)](./package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-43853d.svg)](./package.json)
 
 > **AI coding agent?** Read [`skill.md`](./skill.md) for the exact setup, build, test, and contribution commands.
 
@@ -11,11 +14,27 @@ TypeScript SDK for [BrowseFleet](https://github.com/theRJMurray/browsefleet), th
 
 Zero runtime dependencies. Native `fetch` (Node 18+). Dual ESM + CJS.
 
-## Installation
+## Install from source
+
+The SDK is available from this repository. As of September 11, 2026, `browsefleet` is not published on npm; `npm install browsefleet` is not an available installation route.
+
+With Node.js 18 or newer and npm, clone and build the SDK, then create a local package archive:
 
 ```bash
-npm install browsefleet
+git clone https://github.com/theRJMurray/browsefleet-node.git
+cd browsefleet-node
+npm ci
+npm run build
+npm pack --ignore-scripts
 ```
+
+`npm pack` prints the archive filename, such as `browsefleet-0.1.0.tgz`. It creates a local file and does not publish a package. From your application directory, install that archive, replacing the example path and filename with the file you just created:
+
+```bash
+npm install /absolute/path/to/browsefleet-node/browsefleet-0.1.0.tgz
+```
+
+On Windows, use a path such as `C:/code/browsefleet-node/browsefleet-0.1.0.tgz`. Quote paths containing spaces. You can then import `BrowseFleet` from `browsefleet` as shown below. API calls require a running [BrowseFleet server](https://github.com/theRJMurray/browsefleet); installing the SDK does not start one.
 
 ## Quick Start
 
